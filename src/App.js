@@ -1,24 +1,19 @@
-import logo from './logo.svg';
-import './App.css';
+// Third-party Libraries
+import 'bootstrap-icons/font/bootstrap-icons.css'
+
+// Components
+import Main from './Layouts/Main';
+
+// Context Provider
+import { SpotifyProvider } from './Context/SpotifyProvider';
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <>
+      <SpotifyProvider>
+        <Main />
+      </SpotifyProvider>
+    </>
   );
 }
 
