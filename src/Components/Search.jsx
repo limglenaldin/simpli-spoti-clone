@@ -1,4 +1,4 @@
-// Built-in API
+// Built-in Libraries
 import { useContext, useEffect, useState } from "react"
 
 // Context

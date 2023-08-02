@@ -1,4 +1,4 @@
-// Built-in API
+// Built-in Libraries
 import { useContext } from 'react';
 
 // Third-party Libraries

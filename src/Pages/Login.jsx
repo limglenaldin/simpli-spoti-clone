@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 
-// Built-in API
+// Built-in Libraries
 import { useContext, useEffect } from "react";
 
 // Utils
