@@ -4,9 +4,10 @@ import { useContext } from 'react';
 // Third-party Libraries
 import { ToastContainer } from 'react-toastify';
 
-// Pages
-
+// Context
 import { SpotifyContext } from '../Context/SpotifyProvider';
+
+// Pages
 import Dashboard from '../Pages/Dashboard';
 import Login from '../Pages/Login';
 
