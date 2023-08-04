@@ -1,88 +1,50 @@
+// Built-in Libraries
 import React, { useState } from "react";
+
+// Third-party Libraries
+import moment from "moment";
+
+// API Call
+import { fetchRefreshTokenAPI, fetchTokenAPI } from "../API/SpotifyAPI/authentication.api";
+import { fetchMyProfileAPI } from "../API/SpotifyAPI/profile.api";
 
 const SpotifyContext = React.createContext(null)
 
 const SpotifyProvider = ({ children }) => {
-  const accessToken = localStorage.getItem('token')
-  const [token, setToken] = useState(JSON.parse(accessToken))
+  const [token, setToken] = useState(JSON.parse(localStorage.getItem('token')))
+  const [profile, setProfile] = useState(JSON.parse(localStorage.getItem('profile')))
 
-  const fetchToken = async (authCode) => {
-    const codeVerifier = localStorage.getItem('code_verifier');
-    const body = new URLSearchParams({
-      grant_type: 'authorization_code',
-      code: authCode,
-      client_id: process.env.REACT_APP_SPOTIFY_CLIENT_ID,
-      redirect_uri: process.env.REACT_APP_REDIRECT_URI,
-      code_verifier: codeVerifier
-    });
-
-    const requestOption = {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: body
-    }
-
-    try {
-      const response = await fetch('https://accounts.spotify.com/api/token', requestOption)
-      const res = await response.json()
-
-      if (response.ok) {
-        setToken(res)
-
-        localStorage.setItem('token', JSON.stringify(res))
-      } else {
-        throw new Error(`HTTP STATUS ${response.status} | Response ${res}`);
-      }
-    } catch (error) {
-      console.error(`Error ${error}`);
-    }
+  const fetchToken = (authCode) => {
+    fetchTokenAPI(authCode, setToken)
   }
 
-  const destroyToken = () => {
+  const logout = () => {
     setToken(null)
     localStorage.removeItem('code_verifier')
     localStorage.removeItem('token')
+    localStorage.removeItem('profile')
   }
 
-  const fetchRefreshToken = async () => {
-    const body = new URLSearchParams({
-      grant_type: 'refresh_token',
-      client_id: process.env.REACT_APP_SPOTIFY_CLIENT_ID,
-      refresh_token: token?.refresh_token
-    });
+  const fetchRefreshToken = () => {
+    fetchRefreshTokenAPI(token, setToken)
+  }
 
-    const requestOption = {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: body
+  const fetchProfile = (requestOption) => {
+    if (moment().diff(token?.issued_at, 'second') > token?.expires_in) {
+      fetchRefreshToken()
     }
 
-    try {
-      const response = await fetch('https://accounts.spotify.com/api/token', requestOption)
-      const res = await response.json()
-
-      if (response.ok) {
-        setToken(res)
-
-        localStorage.setItem('token', JSON.stringify(res))
-      } else {
-        throw new Error(`HTTP STATUS ${response.status} | Response ${res}`);
-      }
-    } catch (error) {
-      console.error(`Error ${error}`);
-    }
+    fetchMyProfileAPI(setProfile, requestOption)
   }
 
   return (
     <SpotifyContext.Provider value={{
       token,
+      profile,
       fetchToken,
       fetchRefreshToken,
-      destroyToken
+      fetchProfile,
+      logout
     }}>
       {children}
     </SpotifyContext.Provider>
