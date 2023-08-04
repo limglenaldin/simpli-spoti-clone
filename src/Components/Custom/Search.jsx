@@ -2,15 +2,22 @@
 import { useContext, useEffect, useState } from "react"
 
 // Context
-import { SpotifyContext } from "../Context/SpotifyProvider"
+import { SpotifyContext } from "../../Context/SpotifyProvider"
+
+// Third-party Libraries
+import moment from "moment";
 
 // Components
-import Table from "./Table/Table"
-import Song from "./Card/Song"
+import Table from "../Table/Table"
+import Song from "../Card/Card"
 
 // Utils
-import { toaster } from "../utils/toaster"
-import { convertMsToTime } from "../utils/converter"
+import { toaster } from "../../Utils/toaster"
+import { convertMsToTime } from "../../Utils/converter"
+
+// API Call
+import { searchAPI } from "../../API/SpotifyAPI/search.api"
+import { fetchAddTrackPlaylistAPI } from "../../API/SpotifyAPI/playlist.api";
 
 const Search = () => {
   const { token, fetchRefreshToken } = useContext(SpotifyContext)
@@ -21,6 +28,8 @@ const Search = () => {
   useEffect(() => {
   }, [tracks])
 
+  console.log(tracks)
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -30,7 +39,7 @@ const Search = () => {
       market: 'ID',
       limit: 10
     });
-
+  
     const requestOption = {
       method: 'GET',
       headers: {
@@ -38,36 +47,26 @@ const Search = () => {
       },
     }
 
-    try {
-      const response = await fetch(`https://api.spotify.com/v1/search?${query}`, requestOption)
-      const res = await response.json()
-
-      switch (response.status) {
-        case 200:
-          setTracks(res.tracks.items)
-          console.log(res)
-          break;
-        case 401:
-          fetchRefreshToken()
-          toaster('error', 'Oops! You\'re not authenticated')
-          break;
-        case 403:
-          toaster('error', 'Oops! Request Forbidden, try again later')
-          break;
-        case 429:
-          toaster('info', 'Oops! You have reach rate limits, try again later')
-          break;
-        default:
-          toaster('error', 'Oops! Unknown error')
-          break;
-      }
-    } catch (error) {
-      console.error(`Error ${error}`);
+    if (moment().diff(token?.issued_at, 'second') > token?.expires_in) {
+      fetchRefreshToken()
     }
+
+    searchAPI( query, requestOption, setTracks)
   }
 
-  const handleClickSong = () => {
-    toaster('success', 'Yay! the song added into your playlist')
+  const handleClickSong = (data) => {
+    const requestOption = {
+      method: 'POST',
+      headers: {
+        'Authorization': `${token.token_type} ${token.access_token}`
+      },
+      body: JSON.stringify({
+        uris: [data?.uri],
+        position: 0
+      })
+    }
+
+    fetchAddTrackPlaylistAPI('7AJkbv7Kr36WvFUUDYOqti', requestOption)
   }
 
   return (
@@ -82,10 +81,10 @@ const Search = () => {
               setKeyword(e.target.value)
             }}
             placeholder="What do you want to listen to?"
-            className="bg-neutral-700 rounded-2xl border-0 focus:ring-neutral-200 focus:border-neutral-200 focus:border-0 focus:ring-2 placeholder:text-neutral-500"
+            className="border-0 bg-neutral-700 rounded-2xl focus:ring-neutral-200 focus:border-neutral-200 focus:border-0 focus:ring-2 placeholder:text-neutral-500"
           />
           <button type="submit">
-            <i className="bi bi-search text-xl" />
+            <i className="text-xl bi bi-search" />
           </button>
         </form>
         {
@@ -96,20 +95,16 @@ const Search = () => {
                     <td className="text-center">{i+1}</td>
                     <td>
                       <Song
-                        data={{
-                          title: track?.name,
-                          album_url: track?.album?.images[0].url,
-                          artist: track?.artists[0].name
-                        }}
-                        isDailyMix={true}
+                        data={track}
+                        isTableView={true}
                       />
                     </td>
                     <td>{track?.album.name}</td>
                     <td>{convertMsToTime(track?.duration_ms)}</td>
                     <td>
-                      <button type="button" onClick={handleClickSong}>
-                        <i className="bi bi-heart" />
-                      </button>
+                    <button type="button" onClick={() => handleClickSong(track)}>
+                      <i className="bi bi-heart" />
+                    </button>
                     </td>
                   </tr>
                 )) }
